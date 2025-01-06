@@ -17,6 +17,8 @@ from torch_tensorrt.dynamo.conversion._TRTInterpreter import (
 from torch_tensorrt.dynamo.runtime import PythonTorchTensorRTModule, TorchTensorRTModule
 from torch_tensorrt.dynamo.utils import get_output_dtypes
 
+from torch_tensorrt.dynamo.conversion.tripy import TripyInterpreter, TorchTripyModule
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,15 +58,19 @@ def interpret_module_to_result(
     output_dtypes = infer_module_output_dtypes(
         module, truncate_double=settings.truncate_double
     )
-
-    interpreter = TRTInterpreter(
-        module,
-        inputs,
-        logger_level=(trt.Logger.VERBOSE if settings.debug else trt.Logger.WARNING),
-        output_dtypes=output_dtypes,
-        compilation_settings=settings,
-        engine_cache=engine_cache,
-    )
+    # TODO (pranavm): Figure out how to allow the user to switch between these two:
+    if True:
+        import pdb; pdb.set_trace()
+        interpreter = TRTInterpreter(
+            module,
+            inputs,
+            logger_level=(trt.Logger.VERBOSE if settings.debug else trt.Logger.WARNING),
+            output_dtypes=output_dtypes,
+            compilation_settings=settings,
+            engine_cache=engine_cache,
+        )
+    else:
+        interpreter = TripyInterpreter(module)
 
     interpreter_result = interpreter.run()
     return interpreter_result
@@ -76,7 +82,7 @@ def convert_module(
     settings: CompilationSettings = CompilationSettings(),
     name: str = "",
     engine_cache: Optional[BaseEngineCache] = None,
-) -> PythonTorchTensorRTModule | TorchTensorRTModule:
+) -> PythonTorchTensorRTModule | TorchTensorRTModule | TorchTripyModule:
     """Convert an FX module to a TRT module
     Args:
         module: FX GraphModule to convert
@@ -90,6 +96,11 @@ def convert_module(
     interpreter_result = interpret_module_to_result(
         module, inputs, settings, engine_cache=engine_cache
     )
+
+    # TODO (pranavm): Check what else needs to be done here:
+    # With torch-tripy, interpreter_result is already a module
+    if isinstance(interpreter_result, TorchTripyModule):
+        return interpreter_result
 
     rt_cls = PythonTorchTensorRTModule
 

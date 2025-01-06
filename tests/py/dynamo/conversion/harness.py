@@ -21,6 +21,7 @@ from torch_tensorrt.dynamo._tracer import get_dynamic_shapes_args
 # Use interpreter, input spec, and test case from fx_ts_compat to test Dynamo Converter Registry
 from torch_tensorrt.dynamo.conversion import TRTInterpreter
 from torch_tensorrt.dynamo.conversion._conversion import infer_module_output_dtypes
+from torch_tensorrt.dynamo.conversion.tripy import TripyInterpreter
 from torch_tensorrt.dynamo.lowering import (
     get_decompositions,
     post_lowering,
@@ -283,13 +284,18 @@ class TRTTestCase(TestCase):
             if len(expected_ops):
                 self.assert_has_op(mod, expected_ops)
 
-            interpreter_result = interpreter.run()
-            trt_mod = rt_cls(
-                serialized_engine=interpreter_result.serialized_engine,
-                input_binding_names=list(interpreter_result.input_names),
-                output_binding_names=list(interpreter_result.output_names),
-                name="test_engine",
-            )
+            # TODO (pranavm): Check why we're not using `convert_module` here?
+            if False:
+                interpreter_result = interpreter.run()
+                trt_mod = rt_cls(
+                    serialized_engine=interpreter_result.serialized_engine,
+                    input_binding_names=list(interpreter_result.input_names),
+                    output_binding_names=list(interpreter_result.output_names),
+                    name="test_engine",
+                )
+            else:
+                trt_mod = interpreter.run()
+
             res_trt = trt_mod(*cuda_inputs).cpu()
             res_cpu = mod(*cuda_inputs).cpu()
             assert len(res_trt) == len(res_cpu)
@@ -471,12 +477,16 @@ class DispatchTestCase(TRTTestCase):
         _LOGGER.debug(f"Inputs: {input_specs}")
         _LOGGER.debug(f"Output types: {output_dtypes}")
 
-        interp = TRTInterpreter(
-            mod,
-            trt_input_specs,
-            output_dtypes=output_dtypes,
-            compilation_settings=compilation_settings,
-        )
+        # TODO (pranavm): Check why we're not using `convert_module` here?
+        if False:
+            interp = TRTInterpreter(
+                mod,
+                trt_input_specs,
+                output_dtypes=output_dtypes,
+                compilation_settings=compilation_settings,
+            )
+        else:
+            interp = TripyInterpreter(mod)
 
         super().run_test(
             mod,
