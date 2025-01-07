@@ -59,8 +59,7 @@ def interpret_module_to_result(
         module, truncate_double=settings.truncate_double
     )
     # TODO (pranavm): Figure out how to allow the user to switch between these two:
-    if True:
-        import pdb; pdb.set_trace()
+    if False:
         interpreter = TRTInterpreter(
             module,
             inputs,
@@ -70,7 +69,7 @@ def interpret_module_to_result(
             engine_cache=engine_cache,
         )
     else:
-        interpreter = TripyInterpreter(module)
+        interpreter = TripyInterpreter(module, inputs)
 
     interpreter_result = interpreter.run()
     return interpreter_result

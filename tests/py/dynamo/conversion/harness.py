@@ -203,12 +203,17 @@ class TRTTestCase(TestCase):
             interpreter_result = interpreter.run()
             sec = time.perf_counter() - start
             _LOGGER.info(f"Interpreter run time(s): {sec}")
-            trt_mod = rt_cls(
-                serialized_engine=interpreter_result.serialized_engine,
-                input_binding_names=list(interpreter_result.input_names),
-                output_binding_names=list(interpreter_result.output_names),
-                name="test_engine",
-            )
+            
+            # TODO (pranavm): Check why we're not using `convert_module` here?
+            if False:
+                trt_mod = rt_cls(
+                    serialized_engine=interpreter_result.serialized_engine,
+                    input_binding_names=list(interpreter_result.input_names),
+                    output_binding_names=list(interpreter_result.output_names),
+                    name="test_engine",
+                )
+            else:
+                trt_mod = interpreter_result
             mod = mod.cuda()
             if pyt_inputs is not None:
                 pyt_inputs_cuda = [
@@ -486,7 +491,7 @@ class DispatchTestCase(TRTTestCase):
                 compilation_settings=compilation_settings,
             )
         else:
-            interp = TripyInterpreter(mod)
+            interp = TripyInterpreter(mod, trt_input_specs)
 
         super().run_test(
             mod,
