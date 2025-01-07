@@ -32,7 +32,6 @@ class TripyInterpreter(torch.fx.Interpreter):
 
     def placeholder(self, target, args, kwargs):
         self._inputs.append(self._cur_node_name)
-        # TODO (pranavm): Figure out how to set optimization profiles here.
         return self._cur_node_name
 
     def get_attr(self, target, args, kwargs):
