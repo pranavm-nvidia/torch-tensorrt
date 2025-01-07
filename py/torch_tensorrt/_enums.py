@@ -9,6 +9,8 @@ import tensorrt as trt
 import torch
 from torch_tensorrt._features import ENABLED_FEATURES, needs_torch_tensorrt_runtime
 
+# TODO (pranavm): Probably don't want to create a dependency on Tripy by default.
+import nvtripy as tp
 
 class dtype(Enum):
     """Enum to describe data types to Torch-TensorRT, has compatibility with torch, tensorrt and numpy dtypes"""
@@ -312,7 +314,7 @@ class dtype(Enum):
 
     def to(
         self,
-        t: Union[Type[torch.dtype], Type[trt.DataType], Type[np.dtype], Type[dtype]],
+        t: Union[Type[torch.dtype], Type[trt.DataType], Type[np.dtype], Type[dtype], Type[tp.dtype]],
         use_default: bool = False,
     ) -> Union[torch.dtype, trt.DataType, np.dtype, dtype]:
         """Convert dtype into the equivalent type in [torch, numpy, tensorrt]
@@ -424,6 +426,28 @@ class dtype(Enum):
                 return np.float32
             else:
                 raise TypeError("Unsupported numpy dtype")
+
+        elif t == tp.dtype:
+            if self == dtype.i8:
+                return tp.int8
+            elif self == dtype.i32:
+                return tp.int32
+            elif self == dtype.f8:
+                return tp.float8
+            elif self == dtype.i64:
+                return tp.int64
+            elif self == dtype.f16:
+                return tp.float16
+            elif self == dtype.f32:
+                return tp.float32
+            elif self == dtype.b:
+                return tp.bool
+            elif self == dtype.bf16:
+                return tp.bfloat16
+            elif use_default:
+                return tp.float32
+            else:
+                raise TypeError("Unsupported Tripy dtype")
 
         elif t == dtype:
             return self

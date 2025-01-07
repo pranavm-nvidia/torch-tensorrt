@@ -73,15 +73,11 @@ class TripyInterpreter(torch.fx.Interpreter):
 
         exec(tripy_func_str, locals(), globals())
 
-        def tripy_dtype_from_torch(torch_dtype):
-            # TODO (pranavm): Should extend `dtype.to` to support Tripy types and remove this function.
-            return {torch.float32: tp.float32}[torch_dtype.to(torch.dtype)]
-
         # TODO (pranavm): Handle dynamic shaped inputs here.
         compiled_func = tp.compile(
             tripy_func,  # Defined by the string we exec
             args=[
-                tp.InputInfo(inp.shape, tripy_dtype_from_torch(inp.dtype))
+                tp.InputInfo(inp.shape, inp.dtype.to(tp.dtype))
                 for inp in self._input_specs
             ],
         )
